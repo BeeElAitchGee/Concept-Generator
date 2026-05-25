@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Film & TV Concept Randomizer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.19.0/fonts/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #ffffff;
+      --bg2:       #f5f5f5;
+      --border:    #e0e0e0;
+      --border2:   #cccccc;
+      --text:      #111111;
+      --text2:     #444444;
+      --text3:     #888888;
+      --radius:    12px;
+      --radius-sm: 8px;
+      --accent:    #534AB7;
+      --accent-bg: #EEEDFE;
+      --accent-dk: #3C3489;
+      --accent-br: #AFA9EC;
+      --green:     #0F6E56;
+      --green-bg:  #E6F4F1;
+      --max:       900px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:        #1a1a1a;
+        --bg2:       #242424;
+        --border:    #333333;
+        --border2:   #484848;
+        --text:      #f0f0f0;
+        --text2:     #bbbbbb;
+        --text3:     #777777;
+        --accent-bg: #26215C;
+        --accent-dk: #CECBF6;
+        --green-bg:  #0A3D31;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2.5rem 1.25rem 5rem;
+    }
+
+    /* ── Centred, max-width wrapper — never grows beyond 900px ── */
+    .wrapper {
+      max-width: var(--max);
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .app-header { text-align: center; margin-bottom: 1.75rem; }
+    .app-header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .35rem; }
+    .app-header p  { font-size: 13px; color: var(--text3); }
+
+    .hint { font-size: 11px; color: var(--text3); text-align: center; margin-bottom: .6rem; }
+
+    /* ────────────────────────────────────────────
+       REEL GRID — always 4 columns, never reflows
+    ──────────────────────────────────────────── */
+    .reel-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);   /* fixed 4-col */
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .reel-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: .85rem .7rem .7rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+    .reel-card:hover  { border-color: var(--border2); }
+    .reel-card.locked { border-color: var(--accent); background: var(--accent-bg); }
+    .reel-card.locked .reel-label { color: var(--accent); }
+    .reel-card.locked .reel-slot  { color: var(--accent-dk); }
+    .reel-card.locked .lock-row   { color: var(--accent); border-top-color: var(--accent-br); }
+
+    .reel-icon  { font-size: 16px; display: block; color: var(--text2); margin-bottom: 4px; }
+    .reel-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); font-weight: 500; margin-bottom: 6px; }
+    .reel-slot  { font-size: 12px; font-weight: 500; color: var(--text); min-height: 36px; display: flex; align-items: center; justify-content: center; line-height: 1.3; }
+    .reel-slot.spinning { color: var(--text3); }
+    .lock-row   { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 8px; padding-top: 6px; border-top: 0.5px solid var(--border); font-size: 10.5px; color: var(--text3); }
+
+    /* ────────────────────────────────────────────
+       CAST CARD
+    ──────────────────────────────────────────── */
+    .cast-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: .85rem .85rem .85rem;
+      margin-bottom: 10px;
+    }
+    .cast-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .cast-title { font-size: 10px; text-transform: uppercase; letter-spacing: .09em; color: var(--text3); font-weight: 500; display: flex; align-items: center; gap: 5px; }
+
+    .mode-toggle { display: flex; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); overflow: hidden; }
+    .mode-btn    { font-size: 11.5px; padding: 5px 12px; border: none; background: transparent; color: var(--text2); cursor: pointer; transition: background .15s, color .15s; font-family: inherit; }
+    .mode-btn.active { background: var(--bg2); color: var(--text); font-weight: 500; }
+
+    /* Cast inner grids — always 3-col for characters, or 1-auto-1 for factions */
+    .cast-inner-char    { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .cast-inner-faction { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
+
+    .vs-badge { font-size: 13px; font-weight: 600; color: var(--text3); text-align: center; padding: 0 4px; }
+
+    .cast-slot {
+      background: var(--bg2);
+      border-radius: var(--radius-sm);
+      padding: .7rem .75rem .6rem;
+      text-align: center;
+      cursor: pointer;
+      border: 0.5px solid var(--border);
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+    .cast-slot:hover  { border-color: var(--border2); }
+    .cast-slot.locked { border-color: var(--accent); background: var(--accent-bg); }
+    .cast-slot.locked .cast-slot-label { color: var(--accent); }
+    .cast-slot.locked .reel-slot       { color: var(--accent-dk); }
+    .cast-slot.locked .lock-row        { color: var(--accent); border-top-color: var(--accent-br); }
+    .cast-slot-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); font-weight: 500; margin-bottom: 5px; }
+
+    /* ── Buttons ── */
+    .unlock-row { display: flex; justify-content: center; margin-bottom: 4px; }
+    .btn-row    { display: flex; gap: 10px; justify-content: center; padding: .9rem 0 1.1rem; flex-wrap: wrap; }
+
+    button {
+      cursor: pointer; font-size: 13.5px;
+      border-radius: var(--radius-sm); padding: 9px 18px;
+      border: 0.5px solid var(--border2); background: transparent; color: var(--text);
+      transition: background .15s; font-family: inherit;
+    }
+    button:hover  { background: var(--bg2); }
+    button:active { transform: scale(.98); }
+    button.primary { font-weight: 500; }
+    button.save-btn       { border-color: var(--green); color: var(--green); font-weight: 500; }
+    button.save-btn:hover { background: var(--green-bg); }
+    button.save-btn.saved { background: var(--green); color: #fff; }
+
+    /* ── Result box ── */
+    .result-box {
+      background: var(--bg2);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      font-size: 14px; color: var(--text2); line-height: 1.85;
+      min-height: 64px;
+    }
+    .result-box strong { color: var(--text); font-weight: 600; }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.75rem 0 1.25rem; }
+
+    /* ── Saved list ── */
+    .saved-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .saved-title  { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--text3); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .saved-count  { background: var(--bg2); border-radius: 999px; font-size: 10px; padding: 1px 7px; color: var(--text2); font-weight: 500; }
+    .saved-actions-row { display: flex; gap: 8px; }
+
+    .saved-empty { font-size: 13px; color: var(--text3); text-align: center; padding: 1.5rem 1rem; border: 0.5px dashed var(--border); border-radius: var(--radius); }
+
+    .saved-list { display: flex; flex-direction: column; gap: 8px; }
+    .saved-item {
+      background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius);
+      padding: .9rem 1rem; position: relative; transition: border-color .15s;
+    }
+    .saved-item:hover     { border-color: var(--border2); }
+    .saved-item-num       { font-size: 10px; color: var(--text3); font-weight: 500; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .07em; }
+    .saved-item-text      { font-size: 13px; color: var(--text2); line-height: 1.75; padding-right: 100px; }
+    .saved-item-text strong { color: var(--text); font-weight: 600; }
+    .saved-item-actions   { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+
+    .icon-btn { background: none; border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; font-size: 13px; cursor: pointer; color: var(--text3); transition: all .15s; font-family: inherit; }
+    .icon-btn:hover        { border-color: var(--border2); color: var(--text); background: var(--bg2); }
+    .icon-btn.delete:hover { border-color: #D94040; color: #D94040; }
+    .icon-btn.load:hover   { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text); color: var(--bg);
+      font-size: 13px; padding: 9px 20px; border-radius: 999px;
+      opacity: 0; transition: all .25s; pointer-events: none; z-index: 9999;
+      white-space: nowrap; font-family: inherit;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Footer ── */
+    .app-footer { text-align: center; margin-top: 3rem; font-size: 11px; color: var(--text3); }
+
+    /* ── Mobile — collapse to 2-col reels on narrow screens only ── */
+    @media (max-width: 560px) {
+      .reel-grid           { grid-template-columns: repeat(2, 1fr); }
+      .cast-inner-char     { grid-template-columns: 1fr; }
+      .saved-item-text     { padding-right: 0; padding-bottom: 44px; }
+      .saved-item-actions  { top: auto; bottom: 10px; right: 10px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="app-header">
+    <h1>🎬 Film &amp; TV Concept Randomizer</h1>
+    <p>Spin the reels to generate story concepts — lock what you like and keep spinning</p>
+  </div>
+
+  <p class="hint">Click any card to <strong>lock</strong> it — locked cards stay when you spin again</p>
+
+  <!-- 4-column reel grid: row 1 (4 cards), row 2 (4 cards) -->
+  <div class="reel-grid" id="reels"></div>
+
+  <!-- Cast & Conflict -->
+  <div class="cast-card">
+    <div class="cast-header">
+      <span class="cast-title"><i class="ti ti-users"></i> Cast &amp; conflict</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeCharBtn" onclick="setMode('character')">Characters</button>
+        <button class="mode-btn"        id="modeFacBtn"  onclick="setMode('faction')">Factions</button>
+      </div>
+    </div>
+    <div class="cast-inner-char" id="castGrid">
+      <div class="cast-slot" id="castSlotA" onclick="toggleCastLock('a')">
+        <div class="cast-slot-label" id="castLabelA">Character 1</div>
+        <div class="reel-slot" id="castTextA">—</div>
+        <div class="lock-row" id="castLockA"><i class="ti ti-lock-open"></i> Click to lock</div>
+      </div>
+      <div class="cast-slot" id="castSlotB" onclick="toggleCastLock('b')">
+        <div class="cast-slot-label" id="castLabelB">Relationship</div>
+        <div class="reel-slot" id="castTextB">—</div>
+        <div class="lock-row" id="castLockB"><i class="ti ti-lock-open"></i> Click to lock</div>
+      </div>
+      <div class="cast-slot" id="castSlotC" onclick="toggleCastLock('c')">
+        <div class="cast-slot-label" id="castLabelC">Character 2</div>
+        <div class="reel-slot" id="castTextC">—</div>
+        <div class="lock-row" id="castLockC"><i class="ti ti-lock-open"></i> Click to lock</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="unlock-row">
+    <button onclick="clearAllLocks()" style="font-size:12px;padding:5px 14px;color:var(--text3);border-color:var(--border);">
+      <i class="ti ti-lock-open"></i> Unlock all
+    </button>
+  </div>
+
+  <div class="btn-row">
+    <button class="primary" onclick="spinAll()"><i class="ti ti-refresh"></i> Spin unlocked</button>
+    <button onclick="buildAndShow()">Generate concept ↗</button>
+    <button class="save-btn" id="saveBtn" onclick="saveConcept()"><i class="ti ti-bookmark"></i> Save concept</button>
+  </div>
+
+  <div class="result-box" id="result">
+    Spin the reels, lock the ones you like, then hit <strong>Generate concept</strong>.
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Saved concepts -->
+  <div class="saved-header">
+    <span class="saved-title">
+      <i class="ti ti-bookmark"></i> Saved concepts
+      <span class="saved-count" id="savedCount">0</span>
+    </span>
+    <div class="saved-actions-row">
+      <button onclick="exportAll()" style="font-size:11px;padding:4px 10px;color:var(--text3);border-color:var(--border);">
+        <i class="ti ti-download"></i> Export .txt
+      </button>
+      <button onclick="clearAllSaved()" style="font-size:11px;padding:4px 10px;color:var(--text3);border-color:var(--border);">
+        <i class="ti ti-trash"></i> Clear all
+      </button>
+    </div>
+  </div>
+  <div id="savedList">
+    <div class="saved-empty">No concepts saved yet — generate one and hit <strong>Save concept</strong>.</div>
+  </div>
+
+  <div class="app-footer">Film &amp; TV Concept Randomizer &mdash; built with Claude</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ─── DATA ─────────────────────────────────────────────────────── */
+const CATEGORIES = [
+  { key:"genre",      label:"Genre",          icon:"ti-movie",           options:["Sci-fi thriller","Dark comedy","Supernatural horror","Period drama","Action-adventure","Psychological mystery","Romantic comedy","Neo-noir","Dystopian drama","Heist","Creature feature","Coming-of-age","Political satire","Slasher","Space opera","Mockumentary","Paranormal romance","War epic","Fairy tale retelling","Cyberpunk","Spy thriller","Legal drama","Medical drama","Cosmic horror","Survival horror","Martial arts epic","Anthology horror","Gothic romance","Buddy cop comedy","Mythological epic","Docudrama","Revenge thriller","Kaiju epic","Western noir","Science fantasy","Supernatural procedural","Crime anthology","Post-apocalyptic drama","Historical fantasy","Social satire"] },
+  { key:"mood",       label:"Mood",           icon:"ti-mood-crazy-happy", options:["Tense & paranoid","Whimsical & absurd","Bleak & hopeless","Warm & nostalgic","Frantic & chaotic","Eerily calm","Bittersweet","Darkly humorous","Dreamlike","Urgent & desperate","Melancholic","Euphoric","Claustrophobic","Playful","Gritty & raw","Surreal","Menacing","Hopeful","Wistful","Feverish","Quietly unnerving","Lushly romantic","Coldly clinical","Operatically intense","Darkly whimsical","Suffocatingly tense","Hauntingly beautiful","Savagely funny","Tenderly heartbreaking","Gloriously chaotic","Serenely eerie","Grimly satirical","Mythically grand"] },
+  { key:"setting",    label:"Setting",        icon:"ti-map-pin",          options:["Abandoned space station","1920s speakeasy","Isolated Arctic research base","Underground bunker city","Victorian manor","Post-war Tokyo","Floating island colony","Ancient Mayan ruins","Near-future megacity","Remote Appalachian town","Underground cave network","Cold War embassy","Sunken ocean city","Renaissance court","Suburban cul-de-sac","Dense jungle research camp","A generation ship","1970s Hollywood","Parallel Earth","Medieval plague village","Overcrowded lunar colony","A dying star's final planet","Prohibition-era New Orleans","Post-climate collapse city","Ancient Roman underworld","Corporate arcology","1800s frontier mining town","An isolated lighthouse","Deep ocean thermal vent colony","A cursed national park","Virtual reality prison","1940s occupied Paris","A nomadic desert caravan","Crumbling Soviet space program","Post-war Berlin","A monastery at the end of the world","A city built inside a megastructure","The last surviving forest"] },
+  { key:"action",     label:"Action",         icon:"ti-bolt",             options:["Infiltrating a secure facility","Racing against a countdown","Uncovering a conspiracy","Hunting a serial killer","Surviving a siege","Breaking out of captivity","Negotiating a hostage crisis","Tracking an ancient artifact","Assembling an unlikely crew","Stopping an experiment gone wrong","Escaping a collapsing world","Destroying hidden evidence","Exposing a double agent","Reversing a catastrophe","Evading capture","Outwitting a mastermind","Protecting a witness","Hacking a global system","Performing one last job","Rewriting a wrongful conviction","Dismantling a criminal empire","Retrieving a stolen identity","Surviving the thing they created","Brokering peace between factions","Preventing a mass extinction","Avenging a betrayal","Discovering what everyone else forgot","Navigating a power vacuum","Dismantling the system from inside","Hunting down their own past"] },
+  { key:"situation",  label:"Situation",      icon:"ti-sparkles",         options:["While being hunted by their own allies","With only 24 hours left","After waking up 30 years in the future","When the rules of reality start breaking","During a planetary blackout","While trapped together with no way out","As their memories are being erased","Right before a total social collapse","When the monster turns out to be the hero","After a forbidden ritual goes wrong","While falling in love with the enemy","As their secret is about to be exposed","After the only safe place is compromised","During the final hours of civilization","While pretending to be someone else","As a second version of themselves appears","After a deal with something inhuman","While the world watches on live broadcast","As everything they believed turns out to be a lie","When their greatest weapon becomes a liability","After the person they trusted most betrays them","While being erased from history in real time","When the dead start sending messages","As time begins running backwards","When the villain turns out to be right","When survival requires becoming the monster"] },
+  { key:"theme",      label:"Theme",          icon:"ti-eye",              options:["The cost of survival","Identity and transformation","Power and its corruption","Memory and loss","Loyalty vs. truth","The nature of consciousness","Grief as a force","What makes us human","The price of ambition","Complicity and guilt","Love as destruction","The burden of knowledge","Trust and betrayal","Freedom vs. safety","Legacy and inheritance","The cycle of violence","Forgiveness and its limits","The illusion of control","Belonging and exile","Sacrifice and who pays it","The seduction of ideology","Nature vs. nurture","Truth as a weapon","Redemption and whether it's real","Trauma passed through generations","Obsession as identity","The morality of revenge","What we owe each other"] },
+  { key:"timePeriod", label:"Time period",    icon:"ti-clock",            options:["Far future — post-human era","Near future — 10 to 50 years out","Present day","1990s","1980s","1970s","1960s — Cold War peak","1940s — WWII era","1920s — interwar","Victorian era","Renaissance","Medieval","Ancient world","Cyclically shifting — past and present intercut","Non-linear — fractured timeline","Alternate history","The end of time","Deep prehistory","A time that doesn't exist yet"] },
+  { key:"twist",      label:"Narrative twist",icon:"ti-arrows-shuffle",   options:["The protagonist is already dead","The villain and hero are the same person","The rescue mission was the threat all along","The world ended before the story began","The narrator has been lying from page one","The monster is protecting something sacred","There is no escape — and that's not the point","The happy ending already happened — this is the aftermath","The enemy is a version of themselves","The catastrophe was engineered by the victims","What seems like fantasy is literal","The story is someone else's memory","The resolution requires an impossible choice","The villain wins — and it's the right outcome","The main character is a supporting character in the real story","The threat is entirely mundane","Love is the actual antagonist","The real conflict has been invisible the whole time"] }
+];
+
+const CHAR_OPTIONS = ["A disgraced detective","A rogue AI with empathy","An ancient shapeshifter","A group of child prodigies","A war veteran with amnesia","A sentient parasite","Twin assassins","A cult leader in hiding","A time-displaced soldier","A deep-sea cryptid","A con artist with a conscience","A dying god","Three feuding siblings","A mind-reading journalist","A ghost who doesn't know it","A genetically enhanced soldier","A trickster deity","An escaped experiment","An exorcist for hire","A cursed cartographer","A whistleblower on the run","A retired hitman","A body-hopping spirit","A deposed empress","A sentient plague","An immortal detective","A fallen angel","A feral child raised by machines","A disgraced surgeon","A collective hive-mind organism","An oracle who sees too much","A clone who outlived their original","A creature that feeds on grief","A pair of rival time travelers","A ruthless mercenary","A grieving parent","A double agent with divided loyalty","A child who knows too much","A charismatic cult leader","A corrupt official","A mysterious stranger with an agenda","A broken idealist","A rival from the past","A hunted fugitive","A guardian with a secret","A soldier following orders","An exiled noble","A forgotten prophet","A rogue clone","A shapeshifter in disguise","A cyborg seeking humanity","A cursed wanderer","A fallen hero","A manipulative genius","An ancient being in a mortal body","A vigilante without limits"];
+
+const RELATIONSHIP_OPTIONS = ["allied with but suspicious of","at war with","secretly protecting","manipulating","in love with","hunting","being betrayed by","competing against","mourning","trying to redeem","obsessed with","running from","conspiring with","sacrificing themselves for","revealed to be the same as","blackmailing","unknowingly related to","trying to replace","haunted by","slowly becoming"];
+
+const FACTION_PAIRS = [["Rebels","Imperials"],["Orcs","Elves"],["Vampires","Werewolves"],["Humans","Machines"],["Angels","Demons"],["Corporations","Hackers"],["Old Gods","New Order"],["Survivors","Raiders"],["The State","The Underground"],["Aliens","Earth Coalition"],["Witches","Inquisitors"],["Nomads","City-dwellers"],["Scientists","Cultists"],["Pirates","Naval Empire"],["Mutants","Purists"],["The Living","The Dead"],["Dragons","Dragon Hunters"],["Clones","Originals"],["Time Police","Temporal Anarchists"],["Mercenaries","Idealists"],["The Gifted","The Ordinary"],["Sea Kingdoms","Land Empires"],["Synthetic Minds","Organic Resistance"],["Ancient Clans","Colonial Powers"],["The Infected","The Immune"],["Monks","Warlords"],["Refugees","Border Guards"],["The Court","The Street"],["Void Worshippers","Light Keepers"],["Exiles","Enforcers"]];
+
+/* ─── STATE ─────────────────────────────────────────────────────── */
+const state      = {};
+const locked     = {};
+const castState  = { a:"", b:"", c:"" };
+const castLocked = { a:false, b:false, c:false };
+let castMode     = "character";
+let spinning     = false;
+let savedConcepts        = [];
+let currentConceptHTML   = "";
+let currentConceptText   = "";
+
+/* ─── UTILS ─────────────────────────────────────────────────────── */
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* ─── CAST MODE ─────────────────────────────────────────────────── */
+function setMode(mode) {
+  castMode = mode;
+  document.getElementById("modeCharBtn").classList.toggle("active", mode === "character");
+  document.getElementById("modeFacBtn").classList.toggle("active",  mode === "faction");
+  const grid = document.getElementById("castGrid");
+
+  if (mode === "character") {
+    grid.className = "cast-inner-char";
+    grid.innerHTML = `
+      <div class="cast-slot" id="castSlotA" onclick="toggleCastLock('a')">
+        <div class="cast-slot-label" id="castLabelA">Character 1</div>
+        <div class="reel-slot" id="castTextA">${castState.a||"—"}</div>
+        <div class="lock-row" id="castLockA"><i class="ti ti-lock-open"></i> Click to lock</div>
+      </div>
+      <div class="cast-slot" id="castSlotB" onclick="toggleCastLock('b')">
+        <div class="cast-slot-label" id="castLabelB">Relationship</div>
+        <div class="reel-slot" id="castTextB">${castState.b||"—"}</div>
+        <div class="lock-row" id="castLockB"><i class="ti ti-lock-open"></i> Click to lock</div>
+      </div>
+      <div class="cast-slot" id="castSlotC" onclick="toggleCastLock('c')">
+        <div class="cast-slot-label" id="castLabelC">Character 2</div>
+        <div class="reel-slot" id="castTextC">${castState.c||"—"}</div>
+        <div class="lock-row" id="castLockC"><i class="ti ti-lock-open"></i> Click to lock</div>
+      </div>`;
+  } else {
+    grid.className = "cast-inner-faction";
+    grid.innerHTML = `
+      <div class="cast-slot" id="castSlotA" onclick="toggleCastLock('a')">
+        <div class="cast-slot-label" id="castLabelA">Faction A</div>
+        <div class="reel-slot" id="castTextA">${castState.a||"—"}</div>
+        <div class="lock-row" id="castLockA"><i class="ti ti-lock-open"></i> Click to lock</div>
+      </div>
+      <div class="vs-badge">vs</div>
+      <div class="cast-slot" id="castSlotC" onclick="toggleCastLock('c')">
+        <div class="cast-slot-label" id="castLabelC">Faction B</div>
+        <div class="reel-slot" id="castTextC">${castState.c||"—"}</div>
+        <div class="lock-row" id="castLockC"><i class="ti ti-lock-open"></i> Click to lock</div>
+      </div>`;
+  }
+  spinCast();
+}
+
+/* ─── SPIN ──────────────────────────────────────────────────────── */
+function spinCastSlot(slot, finalVal) {
+  const el = document.getElementById("castText" + slot.toUpperCase());
+  if (!el) return;
+  let ticks = 0;
+  const total = 10 + Math.floor(Math.random() * 8);
+  el.classList.add("spinning");
+  const iv = setInterval(() => {
+    el.textContent = slot === "b"
+      ? pick(RELATIONSHIP_OPTIONS)
+      : (castMode === "faction" ? pick(FACTION_PAIRS)[slot === "a" ? 0 : 1] : pick(CHAR_OPTIONS));
+    ticks++;
+    if (ticks >= total) {
+      clearInterval(iv);
+      castState[slot] = finalVal;
+      el.textContent  = finalVal;
+      el.classList.remove("spinning");
+    }
+  }, 65);
+}
+
+function spinCast() {
+  if (castMode === "faction") {
+    const pair = pick(FACTION_PAIRS);
+    if (!castLocked.a) spinCastSlot("a", pair[0]);
+    if (!castLocked.c) spinCastSlot("c", pair[1]);
+  } else {
+    if (!castLocked.a) spinCastSlot("a", pick(CHAR_OPTIONS));
+    if (!castLocked.b) spinCastSlot("b", pick(RELATIONSHIP_OPTIONS));
+    if (!castLocked.c) spinCastSlot("c", pick(CHAR_OPTIONS));
+  }
+}
+
+function animateSlot(cat, callback) {
+  const slot = document.getElementById("slot-" + cat.key);
+  if (!slot) { if (callback) callback(); return; }
+  let ticks = 0;
+  const total = 10 + Math.floor(Math.random() * 10);
+  slot.classList.add("spinning");
+  const iv = setInterval(() => {
+    slot.textContent = pick(cat.options);
+    ticks++;
+    if (ticks >= total) {
+      clearInterval(iv);
+      const final = pick(cat.options);
+      state[cat.key] = final;
+      slot.textContent = final;
+      slot.classList.remove("spinning");
+      if (callback) callback();
+    }
+  }, 65);
+}
+
+function spinAll() {
+  if (spinning) return;
+  const toSpin    = CATEGORIES.filter(c => !locked[c.key]);
+  const castSlots = castMode === "faction"
+    ? ["a","c"].filter(s => !castLocked[s])
+    : ["a","b","c"].filter(s => !castLocked[s]);
+
+  if (!toSpin.length && !castSlots.length) {
+    showToast("All reels are locked — unlock some first");
+    return;
+  }
+  spinning = true;
+  let done = 0;
+  const total  = toSpin.length + (castSlots.length ? 1 : 0);
+  const finish = () => { done++; if (done >= total) spinning = false; };
+
+  toSpin.forEach(cat => animateSlot(cat, finish));
+  if (castSlots.length) { spinCast(); setTimeout(finish, 1000); }
+
+  const sb = document.getElementById("saveBtn");
+  sb.classList.remove("saved");
+  sb.innerHTML = `<i class="ti ti-bookmark"></i> Save concept`;
+  currentConceptHTML = "";
+  currentConceptText = "";
+  document.getElementById("result").innerHTML = "Spinning…";
+}
+
+/* ─── LOCK ──────────────────────────────────────────────────────── */
+function toggleCastLock(slot) {
+  castLocked[slot] = !castLocked[slot];
+  const card   = document.getElementById("castSlot"  + slot.toUpperCase());
+  const lockEl = document.getElementById("castLock"  + slot.toUpperCase());
+  if (!card || !lockEl) return;
+  card.classList.toggle("locked", castLocked[slot]);
+  lockEl.innerHTML = castLocked[slot]
+    ? `<i class="ti ti-lock"></i> Locked`
+    : `<i class="ti ti-lock-open"></i> Click to lock`;
+}
+
+function toggleLock(cat) {
+  locked[cat.key] = !locked[cat.key];
+  const card   = document.getElementById("card-" + cat.key);
+  const lockEl = document.getElementById("lock-" + cat.key);
+  card.classList.toggle("locked", locked[cat.key]);
+  lockEl.innerHTML = locked[cat.key]
+    ? `<i class="ti ti-lock"></i> Locked`
+    : `<i class="ti ti-lock-open"></i> Click to lock`;
+}
+
+function clearAllLocks() {
+  CATEGORIES.forEach(cat => { if (locked[cat.key]) toggleLock(cat); });
+  ["a","b","c"].forEach(s => { if (castLocked[s]) toggleCastLock(s); });
+}
+
+/* ─── BUILD REELS ───────────────────────────────────────────────── */
+function buildReels() {
+  const container = document.getElementById("reels");
+  container.innerHTML = "";
+  CATEGORIES.forEach(cat => {
+    const val = pick(cat.options);
+    state[cat.key]  = val;
+    locked[cat.key] = false;
+    const card = document.createElement("div");
+    card.className = "reel-card";
+    card.id        = "card-" + cat.key;
+    card.title     = "Click to lock / unlock";
+    card.innerHTML = `
+      <i class="ti ${cat.icon} reel-icon"></i>
+      <div class="reel-label">${cat.label}</div>
+      <div class="reel-slot" id="slot-${cat.key}">${val}</div>
+      <div class="lock-row"  id="lock-${cat.key}"><i class="ti ti-lock-open"></i> Click to lock</div>`;
+    card.addEventListener("click", () => toggleLock(cat));
+    container.appendChild(card);
+  });
+  spinCast();
+}
+
+/* ─── CONCEPT ───────────────────────────────────────────────────── */
+function buildConceptParts() {
+  const { genre, mood, setting, action, situation, theme, timePeriod, twist } = state;
+  const a = castState.a || "—";
+  const b = castState.b || "—";
+  const c = castState.c || "—";
+
+  const castHTML = castMode === "character"
+    ? `<strong>${a}</strong>, <strong>${b}</strong> <strong>${c.toLowerCase()}</strong>,`
+    : `the <strong>${a}</strong> against the <strong>${c}</strong>,`;
+  const castText = castMode === "character"
+    ? `${a}, ${b} ${c},`
+    : `the ${a} against the ${c},`;
+
+  const html = `A <strong>${mood.toLowerCase()}</strong> <strong>${genre.toLowerCase()}</strong> set in <strong>${setting.toLowerCase()}</strong> during <strong>${timePeriod.toLowerCase()}</strong>. ${castHTML} ${action.toLowerCase()} <strong>${situation.toLowerCase()}</strong>. At its heart, a story about <strong>${theme.toLowerCase()}</strong> — with a twist: <strong>${twist.toLowerCase()}</strong>.`;
+  const text = `A ${mood.toLowerCase()} ${genre.toLowerCase()} set in ${setting.toLowerCase()} during ${timePeriod.toLowerCase()}. ${castText} ${action.toLowerCase()} ${situation.toLowerCase()}. At its heart, a story about ${theme.toLowerCase()} — with a twist: ${twist.toLowerCase()}.`;
+  return { html, text };
+}
+
+function buildAndShow() {
+  const { html, text } = buildConceptParts();
+  currentConceptHTML = html;
+  currentConceptText = text;
+  document.getElementById("result").innerHTML = html;
+  const sb = document.getElementById("saveBtn");
+  sb.classList.remove("saved");
+  sb.innerHTML = `<i class="ti ti-bookmark"></i> Save concept`;
+}
+
+/* ─── SAVE / LOAD / EXPORT ──────────────────────────────────────── */
+function saveConcept() {
+  if (!currentConceptText) buildAndShow();
+  const sb = document.getElementById("saveBtn");
+  if (savedConcepts.some(c => c.text === currentConceptText)) { showToast("Already saved!"); return; }
+  const entry = { id: Date.now(), html: currentConceptHTML, text: currentConceptText, snapshot: {...state}, castSnapshot: {...castState}, castMode };
+  savedConcepts.push(entry);
+  sb.classList.add("saved");
+  sb.innerHTML = `<i class="ti ti-bookmark-filled"></i> Saved!`;
+  renderSavedList();
+  showToast("Concept saved ✓");
+  setTimeout(() => { sb.classList.remove("saved"); sb.innerHTML = `<i class="ti ti-bookmark"></i> Save concept`; }, 2000);
+}
+
+function deleteSaved(id) {
+  savedConcepts = savedConcepts.filter(c => c.id !== id);
+  renderSavedList();
+  showToast("Removed");
+}
+
+function loadSaved(id) {
+  const entry = savedConcepts.find(c => c.id === id);
+  if (!entry) return;
+  Object.assign(state, entry.snapshot);
+  Object.assign(castState, entry.castSnapshot);
+  CATEGORIES.forEach(cat => { document.getElementById("slot-" + cat.key).textContent = state[cat.key]; });
+  if (entry.castMode !== castMode) {
+    setMode(entry.castMode);
+  } else {
+    ["a","b","c"].forEach(s => { const el = document.getElementById("castText"+s.toUpperCase()); if (el) el.textContent = castState[s]||"—"; });
+  }
+  currentConceptHTML = entry.html;
+  currentConceptText = entry.text;
+  document.getElementById("result").innerHTML = entry.html;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  showToast("Concept loaded ✓");
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text)
+    .then(() => showToast("Copied ✓"))
+    .catch(() => showToast("Copy failed — try manually"));
+}
+
+function clearAllSaved() {
+  if (!savedConcepts.length) return;
+  savedConcepts = [];
+  renderSavedList();
+  showToast("All concepts cleared");
+}
+
+function exportAll() {
+  if (!savedConcepts.length) { showToast("Nothing to export yet"); return; }
+  const lines = savedConcepts.map((c, i) => `#${i + 1}\n${c.text}`).join("\n\n---\n\n");
+  const blob  = new Blob([lines], { type: "text/plain" });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement("a");
+  a.href = url; a.download = "saved-concepts.txt"; a.click();
+  URL.revokeObjectURL(url);
+  showToast("Exported ✓");
+}
+
+function renderSavedList() {
+  const list = document.getElementById("savedList");
+  document.getElementById("savedCount").textContent = savedConcepts.length;
+  if (!savedConcepts.length) {
+    list.innerHTML = `<div class="saved-empty">No concepts saved yet — generate one and hit <strong>Save concept</strong>.</div>`;
+    return;
+  }
+  list.innerHTML = `<div class="saved-list">${savedConcepts.map((c, i) => `
+    <div class="saved-item">
+      <div class="saved-item-num">#${i + 1}</div>
+      <div class="saved-item-text">${c.html}</div>
+      <div class="saved-item-actions">
+        <button class="icon-btn load"   title="Load concept" onclick="loadSaved(${c.id})"><i class="ti ti-upload"></i></button>
+        <button class="icon-btn"        title="Copy text"    onclick="copyText(${JSON.stringify(c.text)})"><i class="ti ti-copy"></i></button>
+        <button class="icon-btn delete" title="Delete"       onclick="deleteSaved(${c.id})"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`).join("")}</div>`;
+}
+
+/* ─── INIT ──────────────────────────────────────────────────────── */
+buildReels();
+renderSavedList();
+</script>
+</body>
+</html>
